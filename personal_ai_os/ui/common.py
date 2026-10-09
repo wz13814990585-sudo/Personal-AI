@@ -8,10 +8,11 @@ from zoneinfo import ZoneInfo
 import streamlit as st
 
 from personal_ai_os.display_zh import zh
+from personal_ai_os.external import ExternalKnownFailure
 
 
 def show_error(exc: Exception) -> None:
-    if isinstance(exc, (ValueError, KeyError, PermissionError)):
+    if isinstance(exc, (ValueError, KeyError, PermissionError, ExternalKnownFailure)):
         code = str(exc).strip("'\"")
         translated = zh(code)
         st.error(translated if translated != code else "操作未完成，请核对输入或查看执行轨迹。")

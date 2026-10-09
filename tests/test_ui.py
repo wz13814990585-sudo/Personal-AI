@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from pathlib import Path
 
 from streamlit.testing.v1 import AppTest
@@ -41,6 +42,27 @@ def test_five_pages_open_without_key_and_show_persisted_data(tmp_path, monkeypat
     assert {row["role"] for row in Repository(path).list_agent_configs()} == {
         "orchestrator", "memory", "learning", "life", "schedule", "task"
     }
+
+
+def test_time_block_form_explains_invalid_range_and_accepts_valid_default(tmp_path, monkeypatch):
+    path = tmp_path / "time_block_ui.sqlite3"
+    monkeypatch.setenv("DATABASE_PATH", str(path))
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    at = AppTest.from_file(APP).run(timeout=30)
+    _assert_page(at, "pages/02_tasks.py", "任务与日程")
+    start = _field(at.text_input, "时间开始（ISO 8601）").value
+    end = _field(at.text_input, "时间结束（ISO 8601）").value
+    assert datetime.fromisoformat(end) > datetime.fromisoformat(start)
+
+    _field(at.text_input, "时间结束（ISO 8601）").set_value(start)
+    _field(at.button, "添加时间段").click().run(timeout=30)
+    assert any("时间结束必须晚于时间开始" in error.value for error in at.error)
+    assert Repository(path).list_time_blocks() == []
+
+    _field(at.text_input, "时间结束（ISO 8601）").set_value(end)
+    _field(at.button, "添加时间段").click().run(timeout=30)
+    assert not at.exception
+    assert len(Repository(path).list_time_blocks()) == 1
 
 
 def test_web_flow_plan_confirm_feedback_review_and_replan(tmp_path, monkeypatch):

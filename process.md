@@ -4,9 +4,11 @@
 
 **不要使用 8502 端口的 personal_ai_os.demo。**那个短版 Demo 主动禁用 iCloud、Gmail、YouTube 和手机通知。本流程使用独立但非 Demo 模式的 SQLite 文件；本机数据与日常库隔离，然而经你批准的真实日历和邮件操作仍会写入你的账号。不要在共享屏幕时展示密钥、设备凭据、ntfy 主题或私人邮件正文。
 
+新版页面按标签分区：在「对话与今日计划」切换「今日概览／AI 规划与审批」；在「任务与日程」切换「任务／可用时间／重复规则」；在「Agent 控制台」切换「内置 Agent／自定义 Agent／外部连接」。外部连接内的「待确认写入」与「外部工具目录」是独立标签，后文提到审批或启用操作时先切到对应标签。
+
 ## 0. 从命令行启动完整功能版
 
-1. 打开 Mac「终端 A」，进入项目目录。已有依赖时可跳过第一条，不要重新复制或覆盖现有 .env。
+1. 打开 macOS 自带的「终端」作为「终端 A」，进入项目目录。外部日历权限与启动应用有关；若从 Cursor 等内置终端运行后日历请求失败，请停止该进程并改用 macOS「终端」启动。已有依赖时可跳过第一条，不要重新复制或覆盖现有 .env。
 
    ~~~bash
    cd '/Users/april/Desktop/AI-agent/自我学习生活的多agent管理平台'
@@ -36,7 +38,7 @@
 1. 「记忆与设置 → 个人设置」：确认时区，填当前个人目标“准备 AI Agent 面试，同时保持每周运动”，填作息和学习偏好备注，点「保存设置」。刷新页面，应看到保存值。
 2. 同页「目标」：创建“准备 AI Agent 面试并建立运动习惯”，再用「保存目标」修改标题或状态。稍后创建任务时应能在关联目标中选到它。另建一条“演示：待删除目标”，点「删除目标」并核对它从列表消失，展示目标完整增删改查。
 3. 同页「习惯」：创建“运动 20 分钟”，每周目标 3 次。给今天点「保存或更正打卡」为已完成，刷新看本周进度；把同日打卡更正为未完成再改回已完成，说明同一天记录可更正。可展示暂停和恢复习惯，最终保持启用。
-4. 「任务与日程 → 可用与占用时间」：复制第 0 节打印的值，添加明天 09:00–11:00、14:00–18:00 两段「可用」，再加 16:00–16:30「占用」。列表应显示三段。下午可用段暂不修改。
+4. 「任务与日程 → 可用与占用时间」：前两次把「时间类型」选为「可用」，分别把第 0 节打印的明天 09:00–11:00、14:00–18:00 填进「时间开始／结束」；第三次选「占用」，填明天 16:00–16:30。每次都要**替换页面默认的今天时间**，并确认结束晚于开始，再点「添加时间段」。列表应显示三段；下午可用段暂不修改。时间标签可以留空。
 5. 同页「创建任务」：建一项未排程的“演示：整理 AI Agent 基础术语”，预计 15 分钟；再建“演示：下午整理复习清单”，预计 20 分钟，开始／结束使用打印的明天 14:00–14:20。展示关联目标、优先级和状态编辑。另建“演示：待删除任务”，再点「删除任务」核对消失；保留前两项供后续使用。
 
 讲解：直接管理的目标、任务、可用时间和习惯会真实保存；Agent 生成的建议在审批前不会变成正式任务。
@@ -79,47 +81,56 @@
 
 ## 6. YouTube 只读 MCP 和学习资料
 
-1. 本机 .env 若有 YOUTUBE_API_KEY，不要打印其值。「Agent 控制台 → YouTube 公共学习资料」若尚未登记，点「登记 YouTube 本机只读服务器」；在目录分别启用服务器、search_videos 和 get_video_details 两项只读操作。目录里随意登记的其他 MCP 名称没有代码绑定，不能执行任意命令。
+1. 本机 .env 若有 YOUTUBE_API_KEY，不要打印其值。「Agent 控制台 → 外部连接 → YouTube」若尚未登记，点「登记 YouTube 本机只读服务器」；在「外部工具目录」分别启用服务器、search_videos 和 get_video_details 两项只读操作。目录里随意登记的其他 MCP 名称没有代码绑定，不能执行任意命令。
 2. 搜索词填“AI Agent architecture beginner”，点「搜索 YouTube 公开视频」，核对真实标题、频道、时长、来源及可点击链接。这里只取公开元数据，不读取个人 YouTube 内容或字幕。
 3. 规划页输入“为明天安排 30 分钟 AI Agent 架构入门学习，并推荐一个初学者视频”，**本次**勾选 YouTube，单独搜索词填“AI Agent architecture beginner”，点「生成计划」。在五 Agent 学习路径的待审草案查看资料链接、频道、时长、来源和理由。先去任务列表核对资料任务尚未正式写入，再决定是否批准。遇到配额或网络失败，展示真实错误和 Trace，不称本次搜索已成功。
 
 ## 7. iCloud 与 Gmail：真实读取、逐项预览和确认
 
-1. 「Agent 控制台 → Mac iCloud 日历」点「授权并列出 iCloud 日历」，由你本人审阅 macOS 权限，选明确的目标日历并「保存所选 iCloud 日历」。在目录启用 iCloud 服务器及 list_events、create_event、update_event。用「读取所选 iCloud 日历」展示真实事件列表。当前应用不提供删除事件，演示测试事件结束后须在日历 App 手动清理。
-2. 在确实空闲的未来时段填标题“Personal AI OS 全功能演示测试”、当地开始与结束、说明“经演示者确认创建”、可选提前 15 分钟提醒，点「生成 iCloud 新事件草案」。在「外部写入逐项确认」看目标日历、完整内容、当地时间、时区和提醒。**仅在你决定真实写入时亲自点「确认这一项外部写入」**，随后重读日历，并在 iPhone 日历 App 核对同步。若不想留测试事件，点「拒绝这一项外部写入」，本次就不能称真实创建已验证。
+1. 「Agent 控制台 → 外部连接 → iCloud 日历」点「授权并列出 iCloud 日历」，由你本人审阅 macOS 权限，选明确的目标日历并「保存所选 iCloud 日历」。系统设置里没有桥接程序条目时，不要假设已被拒绝：首次授权请求可能尚未登记，或日历权限归属于启动服务的终端应用。若页面提示权限未授予，先从 macOS 自带「终端」重新启动同一数据库和端口，再点一次并查看弹窗；仍失败时检查「系统设置 → 隐私与安全性 → 日历」中的实际启动应用。**保存日历后还不能直接读取**：切到「外部工具目录」，展开「iCloud Calendar · 日历 · 已暂停」，点「启用服务器」，再点「列出日历事件 · 只读」这一行的「允许操作」。需要演示创建和修改时，才分别启用对应的两个写入操作；它们仍须逐项预览和确认。返回「iCloud 日历」用「读取所选 iCloud 日历」展示真实事件列表。当前应用不提供删除事件，演示测试事件结束后须在日历 App 手动清理。
+2. 在确实空闲的未来时段填标题“Personal AI OS 全功能演示测试”、当地开始与结束、说明“经演示者确认创建”、可选提前 15 分钟提醒，点「生成 iCloud 新事件草案」。切到「待确认写入」看目标日历、完整内容、当地时间、时区和提醒。**仅在你决定真实写入时亲自点「确认这一项外部写入」**，随后重读日历，并在 iPhone 日历 App 核对同步。若不想留测试事件，点「拒绝这一项外部写入」，本次就不能称真实创建已验证。
 3. 若已创建，重读事件，选中它，改标题为“Personal AI OS 全功能演示测试（已修改）”，点「生成 iCloud 修改草案」。可将此草案留到第 8 节手机审批；确认前原事件应不变。审批后重读同一外部事件 ID。超时或未知结果不要自动重发，先人工核对日历。
-4. 「Agent 控制台 → Gmail 邮件」若新库尚未绑定，点「连接 Gmail（打开浏览器授权）」，你本人核对账号和读取／发送权限；令牌存本机钥匙串。目录里分别启用 Gmail 服务器、list_messages、get_message、send_message。选收件箱、每页 5 封，点「列出 Gmail 邮件」，可展示「Gmail 下一页」。选一封适合展示的邮件，点「读取选中邮件正文」；共享屏幕时可暂停展示正文。正文不自动送模型，也不进入 Trace 或业务 JSON 导出。
-5. 要展示真实发送时，填写你控制的测试收件人、主题“Personal AI OS 全功能演示测试”和正文“这是一封经本人逐项确认的演示邮件，无需回复。”，点「生成 Gmail 发送草案」。在底部核对**发件账号、收件人、主题、完整正文**，你本人再决定确认或拒绝。确认后核对外部邮件 ID、Gmail 已发送与收件端；结果未知时不要重发。邮件不能由此应用撤回。
+4. 「Agent 控制台 → 外部连接 → Gmail 邮件」若新库尚未绑定，点「连接 Gmail（打开浏览器授权）」，你本人核对账号和读取／发送权限；令牌存本机钥匙串。切到「外部工具目录」分别启用 Gmail 服务器、list_messages、get_message、send_message，再回「Gmail 邮件」选收件箱、每页 5 封，点「列出 Gmail 邮件」，可展示「Gmail 下一页」。选一封适合展示的邮件，点「读取选中邮件正文」；共享屏幕时可暂停展示正文。正文不自动送模型，也不进入 Trace 或业务 JSON 导出。
+5. 要展示真实发送时，填写你控制的测试收件人、主题“Personal AI OS 全功能演示测试”和正文“这是一封经本人逐项确认的演示邮件，无需回复。”，点「生成 Gmail 发送草案」。切到「待确认写入」核对**发件账号、收件人、主题、完整正文**，你本人再决定确认或拒绝。确认后核对外部邮件 ID、Gmail 已发送与收件端；结果未知时不要重发。邮件不能由此应用撤回。
 6. 「执行轨迹 → 外部工具审计」展示服务器、操作、草案 ID、状态与错误。服务器白名单不等于 Agent 自动获得日历或邮件写入权限。
 
 ## 8. iPhone 私人入口、手机审批、只读视图和 ntfy
 
 **这一节会暂时把 Mac 的 Tailscale 私人 HTTPS 根路由从日常手机入口切到演示入口。**记下原 Serve 配置，结束后恢复。不能使用 Funnel，也不能代理 Streamlit 8503／8501 端口。
 
-1. Mac 和 iPhone 应在同一私人 Tailscale 网络。终端 B 检查状态和原路由；守护进程未运行时按 [README.md](README.md) 的 userspace 步骤启动并登录：
+1. 保持第 0 节的 8503 终端运行。另开 macOS「终端 B」启动 Tailscale 守护进程，并保持这个窗口开着；Mac 和 iPhone 应登录同一个私人 Tailscale 网络：
 
    ~~~bash
+   tailscaled --tun=userspace-networking --socket=/private/tmp/personal-ai-tailscale.sock
+   ~~~
+
+   再开「终端 C」登录、核对状态，并**记下切换前的 Serve 路由**。若 `up` 给出登录网址，由本人在浏览器完成登录，不要把链接或凭据发给别人：
+
+   ~~~bash
+   tailscale --socket=/private/tmp/personal-ai-tailscale.sock up
    tailscale --socket=/private/tmp/personal-ai-tailscale.sock status
    tailscale --socket=/private/tmp/personal-ai-tailscale.sock serve status --json
    ~~~
 
-2. 从 status 读取 Mac 实际完整的 *.ts.net 域名，**替换**下方占位域名。终端 B 用第 0 节同一数据库启动仅监听回环的手机入口，并保持运行：
+2. 在「终端 C」运行下面整段命令。它会从 Tailscale 状态自动取得 Mac 当前的完整 `*.ts.net` 域名，打印手机地址，并用第 0 节同一数据库启动仅监听回环的手机入口。**不要手填示例域名**；若打印的域名为空或命令报错，先修复第 1 步的 Tailscale 登录。保持终端 C 运行：
 
    ~~~bash
    cd '/Users/april/Desktop/AI-agent/自我学习生活的多agent管理平台'
    SHOWCASE_DB="$PWD/.local/showcase/showcase.sqlite3"
-   SHOWCASE_ORIGIN='https://你的实际Mac域名.ts.net'
+   MAC_DNS="$(tailscale --socket=/private/tmp/personal-ai-tailscale.sock status --json | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["Self"]["DNSName"].rstrip("."))')"
+   SHOWCASE_ORIGIN="https://$MAC_DNS"
+   printf 'iPhone 私人地址：%s\n' "$SHOWCASE_ORIGIN"
    uv run --env-file .env env DATABASE_PATH="$SHOWCASE_DB" PERSONAL_AI_DEMO=0 python -m personal_ai_os mobile-view --port 8767 --public-origin "$SHOWCASE_ORIGIN"
    ~~~
 
-3. 新开「终端 C」把私人 HTTPS 指向 8767，并核对没有 Funnel：
+3. 新开「终端 D」把私人 HTTPS 指向 8767，并核对状态中没有 Funnel。`serve --bg` 会切换私人根路由；若第 1 步记录的路由并非日常入口 8766，演示结束时须按原记录恢复：
 
    ~~~bash
    tailscale --socket=/private/tmp/personal-ai-tailscale.sock serve --bg http://127.0.0.1:8767
    tailscale --socket=/private/tmp/personal-ai-tailscale.sock serve status --json
    ~~~
 
-4. Mac 的 8503 页面 →「记忆与设置 → 设备授权与手机入口」，签发**演示数据库专用**凭据。它只显示一次；暂停屏幕共享后由你本人输入 iPhone Safari 的 SHOWCASE_ORIGIN，不发到聊天。手机应显示「今日与审批」，可看任务、待审计划、每日草案、记忆及外部草案。同一私人域名加 :8503 不应出现 Streamlit，正常私人入口仍可打开。
+4. Mac 的 8503 页面 →「记忆与设置 → 设备授权与手机入口」，签发**演示数据库专用**凭据。它只显示一次；暂停屏幕共享后由你本人在 iPhone Safari 打开终端 C 打印的「iPhone 私人地址」，并输入凭据，不发到聊天。手机应显示「今日与审批」，可看任务、待审计划、每日草案、记忆及外部草案。同一私人域名加 :8503 不应出现 Streamlit，正常私人入口仍可打开。
 5. iPhone 编辑一项演示任务并保存，Mac 核对变化。展示旧版本拒绝时：手机停留旧详情页，Mac 修改同一任务，再在手机直接保存，应拒绝旧版本；刷新手机后可正常编辑。
 6. Mac 生成一份新的待审规划，不要在 Mac 审批；手机打开、编辑一项并保存，看 revision 增加，再审批；Mac 核对正式任务只增加一次。旧 revision 拒绝可用“手机留旧页 → Mac 修改草案 → 手机提交旧页”演示。每日计划同理：Mac 留一份待审每日草案，手机看原／新时间、编辑、保存、确认，Mac 核对实际排程；有冲突不得强行审批。
 7. 再让一项已完成的演示任务产生待审候选记忆，手机逐条看来源后批准或拒绝，Mac 核对状态。若第 7 节留有 iCloud 修改草案，手机看完整目标、标题、当地时间、时区、提醒，再由你本人决定是否「确认这一项外部写入」；如确认，回 Mac 和 iPhone 日历核对。成功草案的确认按钮应消失。邮件草案也支持逐封审批，但**不要默认再发送一封**。
@@ -146,14 +157,14 @@
    uv run --group dev pytest -q tests/test_p1_migration_recurrence.py tests/test_p1_worker.py tests/test_p1_recovery_usage_export.py tests/test_p2_custom_planning.py tests/test_p2_external.py tests/test_p2_mobile.py tests/test_p2_ntfy.py
    ~~~
 
-4. 结束时停止手机入口终端 B、只读入口终端及终端 A；按第 8 节记录的**原配置**恢复 Tailscale Serve。若演示前确实是私人 HTTPS → 127.0.0.1:8766，执行：
+4. 结束时先按第 8 节记录的**原配置**恢复 Tailscale Serve，再停止手机入口终端 C、只读入口终端及终端 A。若演示前确实是私人 HTTPS → 127.0.0.1:8766，执行：
 
    ~~~bash
    tailscale --socket=/private/tmp/personal-ai-tailscale.sock serve --bg http://127.0.0.1:8766
    tailscale --socket=/private/tmp/personal-ai-tailscale.sock serve status --json
    ~~~
 
-   再确认没有 Funnel、日常手机入口能打开。若原路由并非 8766，不要盲目执行此恢复命令。演示数据库可能存有邮件草案和外部 ID，应按个人数据保护；真实 iCloud 测试事件需在日历 App 手动删除，测试邮件不能由本应用撤回。
+   再确认没有 Funnel、日常手机入口能打开。若日常手机入口还要使用，保持运行 Tailscale 的终端 B；若原路由并非 8766，不要盲目执行此恢复命令。演示数据库可能存有邮件草案和外部 ID，应按个人数据保护；真实 iCloud 测试事件需在日历 App 手动删除，测试邮件不能由本应用撤回。
 
 ## 收束时可说
 

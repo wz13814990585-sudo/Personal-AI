@@ -33,6 +33,18 @@ _HEADERS = [
      "form-action 'self'; base-uri 'none'; frame-ancestors 'none'"),
 ]
 
+_MOBILE_STYLE = """<style>
+*{box-sizing:border-box}html{background:#f5f8f6}body{font:16px/1.55 -apple-system,BlinkMacSystemFont,system-ui,sans-serif;color:#19302e;max-width:740px;margin:0 auto;padding:1rem 1rem 4rem}
+h1{font-size:clamp(1.9rem,7vw,2.6rem);line-height:1.15;letter-spacing:-.035em;margin:1.7rem 0 1.2rem}h2{font-size:1.15rem;margin:.1rem 0 1rem;letter-spacing:-.015em}
+section h2{display:flex;align-items:center;justify-content:space-between}.count{font-size:.85rem;border-radius:999px;background:#e5f1ed;color:#176b62;padding:.12rem .55rem}.empty{color:#60736f;margin:.35rem 0}
+nav{position:sticky;top:0;padding:.8rem 0;background:#f5f8f6;z-index:2;border-bottom:1px solid #dce8e3}nav a{display:inline-block;text-decoration:none;font-weight:700;color:#176b62}
+section,article,body>form{background:#fff;border:1px solid #dce8e3;border-radius:16px;padding:1rem 1.15rem;margin:1rem 0;box-shadow:0 6px 22px rgba(27,69,61,.04)}
+section ul{list-style:none;margin:0;padding:0}section li+li{border-top:1px solid #ecf1ef}section li a{display:block;padding:.85rem .2rem;color:#19302e;text-decoration:none;font-weight:550}section li a:hover{color:#176b62}
+label{display:block;margin:.9rem 0;font-weight:600;color:#344d48}input,textarea,select,button{font:inherit;max-width:100%}input:not([type=hidden]),textarea,select{display:block;width:100%;padding:.75rem .8rem;margin-top:.35rem;background:#fff;border:1px solid #becfca;border-radius:10px;color:#19302e}textarea{min-height:6rem}input:focus,textarea:focus,select:focus{outline:2px solid #6cb1a2;outline-offset:1px}
+button{display:inline-block;border:1px solid #176b62;background:#176b62;color:#fff;border-radius:10px;padding:.7rem 1rem;margin:.4rem .4rem .4rem 0;font-weight:700;cursor:pointer;min-height:44px}button:hover{background:#11554d}form[action$='/reject'] button,form[action='/logout'] button{background:#fff;color:#395c55;border-color:#c7d6d0}a{overflow-wrap:anywhere;color:#176b62}p,code{overflow-wrap:anywhere}details{margin:1rem 0;color:#526b66}
+@media(max-width:520px){body{padding:.85rem .8rem 3rem}section,article,body>form{padding:1rem}button{width:100%;margin:.35rem 0}}
+</style>"""
+
 
 def _e(value: Any) -> str:
     return html.escape(str(value if value is not None else ""), quote=True)
@@ -135,11 +147,7 @@ class MobileViewApp:
         return ("<!doctype html><html lang='zh'><meta charset='utf-8'>"
                 "<meta name='viewport' content='width=device-width,initial-scale=1'>"
                 f"<title>{_e(title)} · Personal AI OS</title>"
-                "<style>body{font:16px system-ui;max-width:720px;margin:auto;padding:1rem}"
-                "section,article{border:1px solid #aaa;border-radius:.5rem;padding:1rem;margin:1rem 0}"
-                "label{display:block;margin:.6rem 0}input,textarea,button{font:inherit;max-width:100%}"
-                "input:not([type=hidden]),textarea{display:block;width:100%;box-sizing:border-box;padding:.5rem}"
-                "button{padding:.6rem;margin:.4rem 0}a{overflow-wrap:anywhere}</style>"
+                + _MOBILE_STYLE +
                 f"<body><nav>{nav}</nav><h1>{_e(title)}</h1>{content}{logout}</body></html>").encode()
 
     def _login(self, bad: bool = False) -> bytes:
@@ -156,8 +164,6 @@ class MobileViewApp:
         memory = self.service.list_memory_proposals("pending")
         external = [item for item in self.service.list_external_write_proposals() if item["status"] == "pending"]
         sections = [
-            ("任务", [_link("/tasks/" + item["id"], item["title"] + " · " + zh(item["status"]))
-                    for item in tasks[:100]]),
             ("待审规划", [_link("/plans/" + item["id"], item["request_text"][:90])
                       for item in plans[:20]]),
             ("待审每日计划", [_link("/daily/" + item.id, item.local_date.isoformat())
@@ -166,10 +172,15 @@ class MobileViewApp:
                       for item in memory[:20]]),
             ("待审外部写入", [_link("/external/" + item["id"], zh(item["operation"]) + " → " + item["target"])
                         for item in external[:20]]),
+            ("任务", [_link("/tasks/" + item["id"], item["title"] + " · " + zh(item["status"]))
+                    for item in tasks[:100]]),
         ]
-        content = "".join("<section><h2>" + _e(title) + "</h2><ul>" +
-                          "".join("<li>" + row + "</li>" for row in rows) +
-                          "</ul></section>" for title, rows in sections)
+        content = "".join(
+            "<section><h2>" + _e(title) + f"<span class='count'>{len(rows)}</span></h2>" +
+            ("<ul>" + "".join("<li>" + row + "</li>" for row in rows) + "</ul>"
+             if rows else "<p class='empty'>暂无待处理内容</p>") + "</section>"
+            for title, rows in sections
+        )
         return self._page("今日与审批", content, csrf)
 
     def _task(self, task_id: str, csrf: str) -> bytes:

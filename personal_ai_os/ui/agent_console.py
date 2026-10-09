@@ -13,8 +13,25 @@ from .external_view import render as render_external
 
 def render(service: PersonalAIService) -> None:
     st.title("Agent 控制台")
-    st.caption("角色权限受代码级上限约束；修改指令不会扩大工具权限。")
+    st.caption("查看协作角色、自定义助手与外部连接。角色权限受代码级上限约束。")
     roles = service.list_roles()
+    custom = service.list_custom_agents()
+    first, second = st.columns(2)
+    first.metric("内置 Agent", len(roles))
+    second.metric("已启用自定义 Agent", sum(agent["status"] == "active" for agent in custom))
+    built_in_tab, custom_tab, external_tab = st.tabs(["内置 Agent", "自定义 Agent", "外部连接"])
+    with built_in_tab:
+        _render_builtin(service, roles)
+    with custom_tab:
+        _render_custom(service)
+    with external_tab:
+        if service.demo_mode:
+            st.caption("演示模式已关闭外部账号和 MCP 接入；真实数据不会进入此演示。")
+        else:
+            render_external(service)
+
+
+def _render_builtin(service: PersonalAIService, roles: list[dict]) -> None:
     runs = service.list_runs()
     for role in roles:
         recent_status = "未运行"
@@ -47,6 +64,7 @@ def render(service: PersonalAIService) -> None:
                 except Exception as exc:
                     show_error(exc)
 
+def _render_custom(service: PersonalAIService) -> None:
     st.subheader("自定义 Agent")
     st.caption("DeepSeek 生成的定义须先审核；采纳后默认暂停，启用后才能手动运行只读建议。")
     maximum = service.custom_agent_tool_maximum()
@@ -178,8 +196,3 @@ def render(service: PersonalAIService) -> None:
             )
             if recent:
                 st.caption(f"最近手动运行：{zh(recent['status'])} · {recent['id']}")
-
-    if service.demo_mode:
-        st.caption("演示模式已关闭外部账号和 MCP 接入；真实数据不会进入此演示。")
-    else:
-        render_external(service)

@@ -24,7 +24,16 @@ class MacEventKitBridge:
     def ensure_built(self) -> None:
         if sys.platform != "darwin":
             raise RuntimeError("eventkit_requires_macos")
-        if self.executable.exists() and self.executable.stat().st_mtime >= self.source.stat().st_mtime:
+        current = self.executable.exists() and self.executable.stat().st_mtime >= self.source.stat().st_mtime
+        if current:
+            verified = subprocess.run(
+                ["codesign", "--verify", "--strict", str(self.bundle)],
+                capture_output=True,
+            )
+            if verified.returncode == 0:
+                return
+            # Older helpers were only linker-signed as the temporary .building binary.
+            self._sign_bundle()
             return
         compiler = shutil.which("swiftc")
         if compiler is None:
@@ -66,6 +75,16 @@ class MacEventKitBridge:
         if result.returncode:
             raise RuntimeError("eventkit_helper_build_failed: " + result.stderr[-2000:])
         os.replace(temp_binary, self.executable)
+        self._sign_bundle()
+
+    def _sign_bundle(self) -> None:
+        signed = subprocess.run(
+            ["codesign", "--force", "--sign", "-", "--identifier",
+             "local.personalaios.eventkitbridge", str(self.bundle)],
+            capture_output=True, text=True,
+        )
+        if signed.returncode:
+            raise RuntimeError("eventkit_helper_sign_failed")
 
     def call(self, operation: str, **values: Any) -> dict[str, Any]:
         self.ensure_built()

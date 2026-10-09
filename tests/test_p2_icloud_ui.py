@@ -32,6 +32,34 @@ def test_icloud_permission_request_is_explicit_and_selection_persists(flow_syste
     assert all(not item["enabled"] for item in server["operations"])
 
 
+def test_icloud_permission_failure_explains_mac_access(flow_system, monkeypatch):
+    _, _, _, _, _, service = flow_system
+    bridge = BridgeFake()
+    bridge.mode = "denied"
+    service.icloud_bridge = bridge
+    monkeypatch.setattr("personal_ai_os.bootstrap.page_service", lambda: service)
+    at = AppTest.from_file(APP).run(timeout=30)
+    at.switch_page("pages/03_agents.py").run(timeout=30)
+    field(at.button, "授权并列出 iCloud 日历").click().run(timeout=30)
+    assert not at.exception
+    assert any("日历完整访问" in item.value for item in at.error)
+
+
+def test_icloud_read_explains_paused_server_and_disabled_operation(flow_system, monkeypatch):
+    _, _, _, _, _, service = flow_system
+    bridge = BridgeFake()
+    service.icloud_bridge = bridge
+    selection = service.select_icloud_calendar("icloud-calendar")
+    monkeypatch.setattr("personal_ai_os.bootstrap.page_service", lambda: service)
+    at = AppTest.from_file(APP).run(timeout=30)
+    at.switch_page("pages/03_agents.py").run(timeout=30)
+    assert any("读取尚未启用" in item.value for item in at.warning)
+    assert field(at.button, "读取所选 iCloud 日历").disabled
+    allow(service, selection, "list_events")
+    at.run(timeout=30)
+    assert not field(at.button, "读取所选 iCloud 日历").disabled
+
+
 def test_icloud_preview_read_update_and_approval(flow_system, monkeypatch):
     _, _, _, _, _, service = flow_system
     bridge = BridgeFake()

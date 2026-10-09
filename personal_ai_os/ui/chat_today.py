@@ -21,6 +21,15 @@ from .daily_view import render as render_daily_view
 
 def render(service: PersonalAIService) -> None:
     st.title("对话与今日计划")
+    st.caption("先看今天，再让 Agent 为新的学习或生活目标制定待审计划。")
+    today_tab, plan_tab = st.tabs(["今日概览", "AI 规划与审批"])
+    with today_tab:
+        render_daily_view(service)
+    with plan_tab:
+        _render_planning(service)
+
+
+def _render_planning(service: PersonalAIService) -> None:
     if service.demo_mode:
         st.caption("演示路线：生成六 Agent 草案 → 查看执行轨迹 → 确认待办 → "
                    "完成演示任务并提交反馈 → 审核记忆 → 再次规划。")
@@ -61,7 +70,7 @@ def render(service: PersonalAIService) -> None:
         )
         use_youtube = st.checkbox("本次使用 YouTube 公共视频资料（需先在 Agent 控制台启用两项只读操作）")
         youtube_query = st.text_input("YouTube 搜索词（仅选择 YouTube 时使用；最多 120 字）")
-        submit = st.form_submit_button("生成计划", disabled=not service.model_ready)
+        submit = st.form_submit_button("生成计划", type="primary", disabled=not service.model_ready)
     if submit:
         try:
             with st.status("Agent 正在协作规划", expanded=True) as status:
@@ -151,9 +160,6 @@ def render(service: PersonalAIService) -> None:
                      "结束": local_text(task.end_at.isoformat() if task.end_at else None, service.timezone)}
                     for task in draft.tasks
                 ], hide_index=True)
-
-    render_daily_view(service)
-
 
 def _recurrence_review(service: PersonalAIService, draft, run_status: str) -> None:
     suggestions = service.list_recurrence_suggestions(draft.run_id)
@@ -263,7 +269,7 @@ def _review_form(service: PersonalAIService, draft) -> None:
 
     left, right = st.columns(2)
     with left:
-        if st.button("确认并加入待办", key=f"approve_{draft.run_id}_{draft.revision}"):
+        if st.button("确认并加入待办", type="primary", key=f"approve_{draft.run_id}_{draft.revision}"):
             try:
                 service.approve_plan(draft.run_id, draft.revision)
                 st.success("任务已加入待办。")

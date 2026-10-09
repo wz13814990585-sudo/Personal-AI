@@ -19,6 +19,20 @@ def render(service: PersonalAIService) -> None:
     st.subheader("统一今日视图")
     selected_day = st.date_input("查看当地日期", datetime.now(ZoneInfo(service.timezone)).date())
     overview = service.daily_overview(selected_day)
+    first, second, third = st.columns(3)
+    first.metric("当天任务", len(overview["tasks"]))
+    second.metric("待完成", sum(item["status"] != "completed" for item in overview["tasks"]))
+    third.metric("习惯打卡", sum(bool(item["checked_today"]) for item in overview["habits"]))
+    overview_tab, plan_tab, reflect_tab = st.tabs(["任务与时间", "每日计划草案", "提醒与复盘"])
+    with overview_tab:
+        _render_overview(service, overview)
+    with plan_tab:
+        _render_daily_plan(service, selected_day)
+    with reflect_tab:
+        _render_reminders_and_review(service, selected_day)
+
+
+def _render_overview(service: PersonalAIService, overview: dict) -> None:
     st.caption(f"{overview['local_date']} · {overview['timezone']}；未排程任务也会显示。")
     if overview["tasks"]:
         st.dataframe([{
@@ -31,7 +45,7 @@ def render(service: PersonalAIService) -> None:
             "未排程原因": zh_issue(item["unassigned_reason"]),
         } for item in overview["tasks"]], hide_index=True)
     else:
-        st.caption("该日期没有任务。")
+        st.info("这一天还没有任务。你可以在「任务与日程」添加，或到「AI 规划与审批」生成待审计划。")
     if overview["time_blocks"]:
         st.dataframe([{
             "时间类型": zh(item["kind"]), "标签": item["label"],
@@ -48,6 +62,7 @@ def render(service: PersonalAIService) -> None:
             "当天打卡": "完成" if item["checked_today"] else "未完成",
         } for item in overview["habits"]], hide_index=True)
 
+def _render_reminders_and_review(service: PersonalAIService, selected_day: date) -> None:
     st.subheader("应用内提醒")
     notifications = service.list_notifications()
     if notifications:
@@ -111,6 +126,7 @@ def render(service: PersonalAIService) -> None:
 
     render_proactive_view(service)
 
+def _render_daily_plan(service: PersonalAIService, selected_day: date) -> None:
     if st.button("生成每日草案"):
         try:
             draft = service.propose_daily_plan(selected_day)
@@ -232,7 +248,7 @@ def render(service: PersonalAIService) -> None:
                     st.rerun()
                 except Exception as exc:
                     show_error(exc)
-    if st.button("确认每日计划", disabled=bool(draft.conflicts) or not draft.actions):
+    if st.button("确认每日计划", type="primary", disabled=bool(draft.conflicts) or not draft.actions):
         try:
             service.approve_daily_plan(draft.id, draft.revision)
             st.rerun()

@@ -390,3 +390,21 @@ iPhone Safari 访问原 Streamlit 的私人设备域名 `:8501` 没有出现 Str
 五个 Streamlit 页面、手机审批页和只读视图改为显示中文状态、优先级、领域、日程类型、智能体角色、权限操作、冲突原因与执行事件；手机优先级改成中文选项，提交值仍是原枚举。常见错误先显示中文说明，未知错误保留在可展开的技术详情中。真实 DeepSeek 的内置与自定义智能体指令补充“面向用户的自然语言使用简体中文”，既有解释中的固定角色前缀与字段词在展示时翻译；JSON 键、枚举、ID、工具名、时间格式与数据库内容保持原契约。外部写入的原始 JSON 预览及技术标识保留，避免影响逐项审批和审计。演示操作说明 `process.md` 同步使用中文页面状态。
 
 验证：`.venv/bin/python -m compileall -q personal_ai_os app.py pages` 成功；`.venv/bin/python -m pytest -q` 为 `203 passed, 7 skipped in 38.19s`，覆盖中文显示相关 AppTest、手机编辑及审批边界。配置密钥后在隔离数据库运行真实 DeepSeek 六智能体混合规划 `tests/test_p1_life_plan.py::test_real_deepseek_mixed_study_life_plan`，结果 `1 passed in 16.15s`；任务标题为中文、草案待确认，未提交任务。沙箱内首次测试因网络连接被拒绝，获准联网重跑通过。未更改历史用户内容或既有模型输出。
+
+## 演示时段输入修复（2026-10-09）
+
+“可用与占用时间”的新建表单原先把开始和结束都默认设为当前时刻，直接提交会被结构化校验拒绝，页面只显示笼统错误。现改为结束默认比开始晚一小时（按 UTC 计算以跨越时区变更），显示按当前时区计算的明日输入示例；新建与编辑时若缺少时间、格式不合法或结束不晚于开始，会给出明确中文提示，且不写入数据。`process.md` 补充“可用／占用”选择和两端时间都需替换的步骤。
+
+验证：`.venv/bin/python -m pytest -q tests/test_ui.py` 为 `5 passed`，包含默认值、无效区间拒绝和有效区间提交；全量 `.venv/bin/python -m pytest -q` 为 `204 passed, 7 skipped in 43.07s`。没有调用真实模型或外部账号。
+
+## 演示日历授权修复（2026-10-09）
+
+8503 演示库使用独立 EventKit 桥接 App。旧构建只按临时文件名做链接器签名，App 包签名验证失败；现构建后对完整 App 做本机签名，并在发现旧包签名无效时修复。页面对 `calendar_permission_denied` 显示明确中文提示。已签名桥接在获准的本机运行环境实际列出 iCloud 日历；原 Cursor 内置终端启动的 8503 页面仍收到权限拒绝。随后用同一演示 SQLite 在获准环境重启 8503，浏览器实际列出日历并保存 iCloud「个人」；没有创建或修改事件。临时 8504 验证服务已停止，8503 的 Web 与 worker 保持运行。
+
+验证：`.venv/bin/python -m pytest -q tests/test_p2_icloud.py tests/test_p2_icloud_ui.py` 为 `12 passed`；全量 `.venv/bin/python -m pytest -q` 为 `205 passed, 7 skipped in 42.58s`。`codesign --verify --strict` 对演示桥接 App 返回成功。`process.md` 与 README 补充从 macOS 自带终端启动及授权未登记时的排查方式。
+
+## 演示日历读取权限提示（2026-10-09）
+
+演示库已选择 iCloud「个人」，但目录中 `iCloud Calendar` 仍暂停，`list_events` 为关闭。2026-10-01 至 2026-10-16 的日期范围合法；读取失败源于代码级外部操作白名单，非日期输入。现页面在读取表单旁明确提示需启用服务器和「列出日历事件 · 只读」，未启用前禁用读取按钮；通用 `external_operation_not_allowed` 错误也有中文说明。`process.md` 增加具体点击顺序。未自动扩大日历权限或写入事件。
+
+验证：`.venv/bin/python -m pytest -q tests/test_p2_icloud_ui.py tests/test_p2_icloud.py` 为 `13 passed in 4.43s`；实际 8503 页面显示警告和禁用按钮，目录里三个操作均仍关闭。

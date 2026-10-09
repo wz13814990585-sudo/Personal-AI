@@ -76,6 +76,8 @@ _LABELS = {
     "stale_revision": "版本已过期", "task_version_conflict": "任务版本冲突",
     "schedule_conflict": "时间冲突", "invalid_model_output": "模型输出格式无效",
     "permission_denied": "权限不足", "model_timeout": "模型请求超时",
+    "external_operation_not_allowed": "外部操作尚未启用，请在 Agent 控制台展开对应服务器，启用服务器和所需操作。",
+    "calendar_permission_denied": "macOS 尚未授予此应用日历完整访问。请检查授权弹窗；若没有弹窗，请从启动演示服务的应用（例如 Cursor 或终端）检查日历权限后重试。",
     "no_availability": "没有可用时间", "outside_availability": "不在可用时间内",
     "busy_overlap": "与占用时间冲突", "task_overlap": "与已有任务冲突",
     "after_deadline": "超过期限", "avoided_local_time": "处于偏好避让时段",

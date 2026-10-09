@@ -13,6 +13,26 @@ from .common import show_error
 
 def render(service: PersonalAIService) -> None:
     st.title("执行轨迹")
+    st.caption("每次规划的 Agent 步骤、错误与工具调用都可追溯。")
+    runs = service.list_runs()
+    custom_runs = service.list_custom_agent_runs()
+    first, second = st.columns(2)
+    first.metric("内置运行", len(runs))
+    second.metric("自定义运行", len(custom_runs))
+    built_in_tab, custom_tab, audit_tab, usage_tab = st.tabs(
+        ["内置 Agent", "自定义 Agent", "外部工具审计", "模型用量"]
+    )
+    with built_in_tab:
+        _render_builtin(service)
+    with custom_tab:
+        _render_custom(service)
+    with audit_tab:
+        _render_audit(service)
+    with usage_tab:
+        _render_usage(service)
+
+
+def _render_usage(service: PersonalAIService) -> None:
     usage = service.usage_summary()
     st.markdown("### DeepSeek 实际用量")
     st.write(f"请求 {usage['request_count']} 次 · 耗时 {usage['duration_ms']} ms · "
@@ -24,6 +44,7 @@ def render(service: PersonalAIService) -> None:
                    f"覆盖 {usage['estimated_request_count']}/{usage['request_count']} 次请求，非账单。")
     if usage["by_model"]:
         st.dataframe(usage["by_model"], hide_index=True)
+def _render_audit(service: PersonalAIService) -> None:
     st.markdown("### 外部工具审计")
     external_events = service.list_external_audit()
     if external_events:
@@ -36,6 +57,7 @@ def render(service: PersonalAIService) -> None:
         ], hide_index=True)
     else:
         st.caption("暂无外部工具事件。")
+def _render_custom(service: PersonalAIService) -> None:
     st.markdown("### 自定义 Agent 运行")
     custom_runs = service.list_custom_agent_runs()
     if custom_runs:
@@ -66,6 +88,7 @@ def render(service: PersonalAIService) -> None:
             ], hide_index=True)
     else:
         st.caption("暂无自定义 Agent 运行。")
+def _render_builtin(service: PersonalAIService) -> None:
     st.markdown("### 内置 Agent 运行")
     runs = service.list_runs()
     if not runs:

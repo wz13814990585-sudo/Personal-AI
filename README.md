@@ -22,6 +22,20 @@ uv run --env-file .env python -m personal_ai_os start
 
 打开 <http://127.0.0.1:8501>。无密钥时仍可管理本机目标、任务和时间；Agent 规划与反馈提取会显示配置提示，不会切换模型。模型调用只发往 DeepSeek，默认使用 `deepseek-flash`。
 
+## 界面导航
+
+桌面版保留五个页面，首屏显示关键数量，详细操作按用途放在标签页中。表格先显示常用列，完整字段可展开查看。
+
+| 页面 | 从哪里开始 |
+| --- | --- |
+| 对话与今日计划 | 「今日概览」查看当天任务、时间和习惯；「AI 规划与审批」输入目标并审核计划。今日概览内可切换「每日计划草案」与「提醒与复盘」。 |
+| 任务与日程 | 「任务」查看和完成任务，展开所选任务的提醒或编辑表单；「可用时间」管理时间段；「重复规则」管理周期任务。 |
+| Agent 控制台 | 分别查看「内置 Agent」「自定义 Agent」「外部连接」。外部连接先显示「待确认写入」，日历、Gmail、YouTube 和操作白名单各有独立标签。 |
+| 执行轨迹 | 按「内置 Agent」「自定义 Agent」「外部工具审计」「模型用量」查看真实运行与错误。 |
+| 记忆与设置 | 在「个人与设备」设置偏好和手机凭据，在「目标与习惯」管理日常目标，在「长期记忆」逐条审核与修改。 |
+
+iPhone 私人入口也采用卡片式列表，待审批事项排在任务列表前面。界面更新后，正在运行的旧进程需停止并重新执行启动命令；独立 `mobile-view` 也需重启才能加载新版样式。重启不会清空 SQLite 数据。
+
 ## 向别人演示
 
 | 路线 | 适用场景 | 数据库与外部服务 |
@@ -49,10 +63,10 @@ uv run --env-file .env env DATABASE_PATH="$SHOWCASE_DB" PERSONAL_AI_DEMO=0 pytho
 
 ## 一次完整使用
 
-1. 在“记忆与设置”中填写目标、时区和偏好；在“任务与日程”中录入可用时间段。没有可用时段时，系统保留未排程草案。
-2. 在“对话与今日计划”输入“明晚七点有 AI Agent 面试，请制定学习计划并安排任务”，或输入同时包含学习、运动和买菜的混合目标。查看 Agent 步骤、任务领域与来源、草案、记忆依据及冲突，必要时修改任务和时间，再点击“确认并加入待办”。确认前不会创建正式任务。
+1. 在“记忆与设置 → 个人与设备”填写时区和偏好，在“目标与习惯”添加目标；到“任务与日程 → 可用时间”录入时间段。没有可用时段时，系统保留未排程草案。
+2. 在“对话与今日计划 → AI 规划与审批”输入“明晚七点有 AI Agent 面试，请制定学习计划并安排任务”，或输入同时包含学习、运动和买菜的混合目标。查看 Agent 步骤、任务领域与来源、草案、记忆依据及冲突，必要时修改任务和时间，再点击“确认并加入待办”。确认前不会创建正式任务。
 3. 在“任务与日程”将任务标记完成，填写反馈，例如“不要在早上安排学习，下午更合适”。
-4. 在“记忆与设置”审核、修改并批准候选记忆。再次提出类似目标，计划会引用记忆 ID，并避开已批准的禁排时段。候选未批准、被拒绝或已删除时不参与规划。
+4. 在“记忆与设置 → 长期记忆”审核、修改并批准候选记忆。再次提出类似目标，计划会引用记忆 ID，并避开已批准的禁排时段。候选未批准、被拒绝或已删除时不参与规划。
 5. 在“执行轨迹”按运行查看委派顺序、工具调用、状态、耗时和失败原因。
 
 启动命令同时运行 Web 和独立本机 worker；关闭浏览器不会停止后台作业，终端按 Ctrl+C 会停止两个进程。Agent 对业务数据的写入受工具权限和审批边界控制；用户直接编辑的数据会记录审计事件。运行数据使用 SQLite，时间点存为 UTC，页面按设置时区显示。首次打开旧版数据库时会自动创建同目录备份并事务升级；请保留备份文件。
@@ -73,13 +87,13 @@ uv run --env-file .env env DATABASE_PATH="$SHOWCASE_DB" PERSONAL_AI_DEMO=0 pytho
 
 ### Mac iCloud 日历
 
-需要 macOS、已登录 iCloud 的“日历”账号、Swift 编译器（安装 Xcode Command Line Tools 即可）。在“Agent 控制台 → Mac iCloud 日历”点击“授权并列出 iCloud 日历”，按 macOS 提示给予 **完整日历访问**；只读授权不足以读取事件。选择具体的 iCloud 日历并保存。首次操作会在数据库旁的 `eventkit-helper` 目录构建本机桥接程序。若授权被拒绝或弹窗未出现，请在“系统设置 → 隐私与安全性 → 日历”检查 Personal AI OS Calendar Bridge 的访问权限，然后重新列出。
+需要 macOS、已登录 iCloud 的“日历”账号、Swift 编译器（安装 Xcode Command Line Tools 即可）。在“Agent 控制台 → 外部连接 → iCloud 日历”点击“授权并列出 iCloud 日历”，按 macOS 提示给予 **完整日历访问**；只读授权不足以读取事件。选择具体的 iCloud 日历并保存。首次操作会在数据库旁的 `eventkit-helper` 目录构建并签名本机桥接程序。系统设置中没有桥接程序条目，通常表示该启动环境的授权请求尚未登记；不要把这当作已授权。若页面仍报权限未授予，请从 macOS 自带“终端”启动服务后重试，检查授权弹窗和“系统设置 → 隐私与安全性 → 日历”中实际启动应用的权限（可能显示为终端或编辑器）。
 
-选择日历只保存目标，不会自动启用操作。在同一页的外部目录里分别启用 “iCloud Calendar” 服务器和 `list_events`、`create_event`、`update_event` 操作。读取页面支持当地日期范围。创建或修改页面要求填写当地时间，自动转换为设置中的时区；夏令时不存在或重复的当地时间会被拒绝。可填写提前提醒分钟。生成草案时会检查选中日历的冲突；草案显示目标、内容、当地时间、时区和提醒。点击“确认这一项外部写入”后才会再次核查外部事件和冲突，并向 EventKit 发起一次写入。修改草案保留原事件指纹；期间外部事件或选中日历改变会拒绝旧草案。事件 ID、结果、审计和幂等状态保留在本机 SQLite。未知或超时状态必须人工核对日历，不会自动重发。此版本不提供删除事件，也不会给 Agent 自动授予日历权限。
+选择日历只保存目标，不会自动启用操作。在“外部工具目录”标签里分别启用 “iCloud Calendar” 服务器和 `list_events`、`create_event`、`update_event` 操作。读取页面支持当地日期范围。创建或修改页面要求填写当地时间，自动转换为设置中的时区；夏令时不存在或重复的当地时间会被拒绝。可填写提前提醒分钟。生成草案时会检查选中日历的冲突；草案显示目标、内容、当地时间、时区和提醒。到“待确认写入”逐项点击“确认这一项外部写入”后才会再次核查外部事件和冲突，并向 EventKit 发起一次写入。修改草案保留原事件指纹；期间外部事件或选中日历改变会拒绝旧草案。事件 ID、结果、审计和幂等状态保留在本机 SQLite。未知或超时状态必须人工核对日历，不会自动重发。此版本不提供删除事件，也不会给 Agent 自动授予日历权限。
 
 ### Gmail（真实读信和发信已验收）
 
-先在 [Google Cloud Console](https://console.cloud.google.com/) 的本人项目启用 Gmail API，设置 OAuth 同意页面，并创建**桌面应用** OAuth 客户端；将下载的 JSON 放在 `.local/gmail_oauth_client.json`，执行 `chmod 600 .local/gmail_oauth_client.json`。在本机 `.env` 添加 `GMAIL_ACCOUNT=你的 Gmail 地址` 与 `GMAIL_OAUTH_CLIENT_PATH=.local/gmail_oauth_client.json`，不要把 JSON、授权码或令牌粘贴到聊天、文档或代码中。启动应用后，在“Agent 控制台 → Gmail 邮件”点击连接，Mac 默认浏览器会打开授权页；程序只接受你配置的账号，要求 `gmail.readonly` 和 `gmail.send`，并把刷新令牌放入 macOS Keychain。桌面 OAuth 使用本机 `127.0.0.1` 临时回调；不会开放应用网络监听。Google 对这些权限的分类和可能的验证要求见[官方作用域说明](https://developers.google.com/workspace/gmail/api/auth/scopes)与[桌面应用授权说明](https://developers.google.com/identity/protocols/oauth2/native-app)。
+先在 [Google Cloud Console](https://console.cloud.google.com/) 的本人项目启用 Gmail API，设置 OAuth 同意页面，并创建**桌面应用** OAuth 客户端；将下载的 JSON 放在 `.local/gmail_oauth_client.json`，执行 `chmod 600 .local/gmail_oauth_client.json`。在本机 `.env` 添加 `GMAIL_ACCOUNT=你的 Gmail 地址` 与 `GMAIL_OAUTH_CLIENT_PATH=.local/gmail_oauth_client.json`，不要把 JSON、授权码或令牌粘贴到聊天、文档或代码中。启动应用后，在“Agent 控制台 → 外部连接 → Gmail 邮件”点击连接，Mac 默认浏览器会打开授权页；程序只接受你配置的账号，要求 `gmail.readonly` 和 `gmail.send`，并把刷新令牌放入 macOS Keychain。桌面 OAuth 使用本机 `127.0.0.1` 临时回调；不会开放应用网络监听。Google 对这些权限的分类和可能的验证要求见[官方作用域说明](https://developers.google.com/workspace/gmail/api/auth/scopes)与[桌面应用授权说明](https://developers.google.com/identity/protocols/oauth2/native-app)。
 
 授权成功后，可分别启用 Gmail 服务器及 `list_messages`、`get_message`、`send_message` 操作。列表可选择收件箱或已发送，只显示发件人、主题和日期，支持分页；点击选中邮件后才读取正文，HTML 正文以纯文本展示，不自动发给模型。发送时先填写收件人、主题和正文生成草案；核对完整预览后逐项确认才会发出。失败、超时、未知状态及 Gmail 返回的邮件 ID 留在本机审批记录，未知结果不自动重发。读取的正文只在当前页面内存中显示，不写 Trace 或业务 JSON 导出；待发送草案的正文为审批需要保存在本机 SQLite，备份数据库时须同样保护。首版不处理附件、删除、批量发送或邮件正文的大规模归档。**指定 Gmail 账号已完成 OAuth 授权，重启后钥匙串刷新与账号核对成功；真实收件箱列表、用户选中的邮件正文读取和逐封确认发送均已验收。当前 Gmail 服务器及三个操作已显式启用，Agent 仍无自动邮件权限，今后每封邮件仍需单独预览和确认。**
 
@@ -87,7 +101,7 @@ uv run --env-file .env env DATABASE_PATH="$SHOWCASE_DB" PERSONAL_AI_DEMO=0 pytho
 
 在本人 Google Cloud 项目启用 [YouTube Data API v3](https://developers.google.com/youtube/v3/getting-started)，创建仅允许该 API 的 API key，并在本机 `.env` 填写 `YOUTUBE_API_KEY=...`；不要把 key 粘贴到聊天、代码或数据库。此接入只搜索**公开视频**并读取标题、频道、时长和链接，不使用个人 YouTube 登录，也不下载字幕或声称已观看视频。API key 独立于 Gmail OAuth。
 
-在“Agent 控制台 → YouTube 公共学习资料”点击“登记 YouTube 本机只读服务器”，再在同页目录启用该服务器及 `search_videos`、`get_video_details` 两项只读操作。登记默认暂停、操作默认关闭。随后可手动搜索并查看可点击的视频链接。要在规划中使用，在“对话与今日计划”输入学习目标，**为本次规划**勾选 YouTube 并填写单独的搜索词；只有这段搜索词会发往 YouTube，完整生活请求不会被当作搜索词。Learning Agent 仅能引用本次查询返回的视频 ID，资料链接、时长、频道、来源和理由显示于待审草案。确认计划后链接才随任务保存；未确认时正式任务不变。纯生活目标不能选择 YouTube。搜索结果按查询与日期在本机缓存，每日最多发起十次新搜索，每次最多检查三个视频；外部配额或权限错误会明确报错并保留失败记录。
+在“Agent 控制台 → 外部连接 → YouTube”点击“登记 YouTube 本机只读服务器”，再到“外部工具目录”启用该服务器及 `search_videos`、`get_video_details` 两项只读操作。登记默认暂停、操作默认关闭。随后可手动搜索并查看可点击的视频链接。要在规划中使用，在“对话与今日计划 → AI 规划与审批”输入学习目标，**为本次规划**勾选 YouTube 并填写单独的搜索词；只有这段搜索词会发往 YouTube，完整生活请求不会被当作搜索词。Learning Agent 仅能引用本次查询返回的视频 ID，资料链接、时长、频道、来源和理由显示于待审草案。确认计划后链接才随任务保存；未确认时正式任务不变。纯生活目标不能选择 YouTube。搜索结果按查询与日期在本机缓存，每日最多发起十次新搜索，每次最多检查三个视频；外部配额或权限错误会明确报错并保留失败记录。
 
 本机 MCP 客户端用固定命令启动本项目附带的 `stdio` 服务器，先核对服务器身份和工具清单，再调用工具；目录中登记其他名称不能执行任意命令。服务器通过 [YouTube `search.list`](https://developers.google.com/youtube/v3/docs/search/list) 与 [`videos.list`](https://developers.google.com/youtube/v3/docs/videos/list) 读取公开元数据。本机现已配置独立 `YOUTUBE_API_KEY`；在隔离数据库中实测搜索返回公开视频链接、频道、时长和来源，真实 DeepSeek 学习规划生成含视频资料的待审任务，确认前正式任务为零。实测范围与失败后修复记录见 [code.md](code.md)。
 
@@ -164,4 +178,3 @@ uv run --group dev pytest -q tests/test_p2_youtube_mcp.py tests/test_p2_youtube_
 ## 后续开发状态
 
 P1 已实现数据库迁移、重复规则与可审核的星期建议、习惯打卡、受限 Life Agent 混合规划、每日草案与重排、本机 worker、提醒、复盘、失败运行恢复、真实用量及本机导出。P2 已实现自定义 Agent、待审提案、显式选用的只读并行规划、主动建议及策略回退、受限外部目录，以及设备授权和受保护视图。Mac iCloud 日历的读取、经审批创建和修改已在用户选定日历上实测，且用户已核对 iPhone 同步与提醒；Gmail 的桌面 OAuth、真实邮件正文读取和逐封确认发送已验收。YouTube 真实公开视频搜索与 DeepSeek 待审资料任务已在隔离数据库实测，并已在本机正式目录启用只读操作。iPhone 私人 HTTPS 入口已实测登录、查看、编辑和逐项审批；端口隔离及设备撤销的实机结果和 ntfy 通知验收状态见 [code.md](code.md)。完整演示步骤见 [process.md](process.md)；完整需求、方案、编码轮次与当前验收状态分别见 [request.md](request.md)、[design.md](design.md)、[skeleton.md](skeleton.md)、[code.md](code.md)。
-# Personal-AI

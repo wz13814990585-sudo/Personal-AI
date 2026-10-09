@@ -16,6 +16,21 @@ from .common import local_text, parse_datetime, show_error
 
 def render(service: PersonalAIService) -> None:
     st.title("记忆与设置")
+    st.caption("管理个人规则、目标与习惯；每条长期记忆都由你审核。")
+    first, second, third = st.columns(3)
+    first.metric("进行中的目标", sum(goal["status"] == "active" for goal in service.list_goals()))
+    second.metric("习惯", len(service.list_habits()))
+    third.metric("待审核记忆", len(service.list_memory_proposals("pending")))
+    settings_tab, goals_tab, memory_tab = st.tabs(["个人与设备", "目标与习惯", "长期记忆"])
+    with settings_tab:
+        _render_settings(service)
+    with goals_tab:
+        _render_goals_habits(service)
+    with memory_tab:
+        _render_memory(service)
+
+
+def _render_settings(service: PersonalAIService) -> None:
     settings = service.list_settings()
     st.subheader("个人设置")
     with st.form("settings"):
@@ -123,6 +138,7 @@ def render(service: PersonalAIService) -> None:
         st.download_button("导出任务 CSV", service.export_data("tasks_csv"),
                            file_name="personal-ai-os-tasks.csv", mime="text/csv")
 
+def _render_goals_habits(service: PersonalAIService) -> None:
     st.subheader("目标")
     goals = service.list_goals()
     if goals:
@@ -238,6 +254,7 @@ def render(service: PersonalAIService) -> None:
                 st.dataframe([{"当地日期": row["local_date"], "完成": bool(row["completed"]),
                                "备注": row["note"]} for row in checks], hide_index=True)
 
+def _render_memory(service: PersonalAIService) -> None:
     st.subheader("待审核候选记忆")
     pending = service.list_memory_proposals("pending")
     feedback_by_id = {item["id"]: item for item in service.list_feedback()}

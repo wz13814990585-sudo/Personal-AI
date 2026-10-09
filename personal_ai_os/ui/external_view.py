@@ -42,11 +42,20 @@ def _render_icloud(service: PersonalAIService) -> None:
     if not selection:
         return
     st.info(f"当前目标：{selection['source_title']} / {selection['title']} · 时区：{service.timezone}")
+    server = next((item for item in service.list_external_servers()
+                   if item["id"] == selection["server_id"]), None)
+    can_read = bool(server and server["status"] == "active" and any(
+        item["operation"] == "list_events" and item["enabled"]
+        for item in server["operations"]
+    ))
+    if not can_read:
+        st.warning("读取尚未启用：请到「外部工具目录」展开 iCloud Calendar，先点「启用服务器」，"
+                   "再点「列出日历事件 · 只读」旁的「允许操作」。")
     today = datetime.now(ZoneInfo(service.timezone)).date()
     with st.form("icloud_event_read"):
         first_day = st.date_input("读取起始日期", today)
         last_day = st.date_input("读取结束日期", today + timedelta(days=7))
-        do_read = st.form_submit_button("读取所选 iCloud 日历")
+        do_read = st.form_submit_button("读取所选 iCloud 日历", disabled=not can_read)
     if do_read:
         try:
             st.session_state["icloud_events"] = service.read_icloud_local_days(first_day, last_day)["items"]
@@ -181,9 +190,23 @@ def _render_gmail(service: PersonalAIService) -> None:
 
 def render(service: PersonalAIService) -> None:
     st.subheader("MCP 与外部日历／邮件")
-    st.caption("目录仅保存本机白名单。真实服务商和服务器未配置时，不会发生外部调用。")
-    _render_icloud(service)
-    _render_gmail(service)
+    st.caption("先处理待确认写入，再管理各项连接；目录中的权限必须逐项开启。")
+    approval_tab, calendar_tab, mail_tab, youtube_tab, catalog_tab = st.tabs(
+        ["待确认写入", "iCloud 日历", "Gmail 邮件", "YouTube", "外部工具目录"]
+    )
+    with approval_tab:
+        _render_proposals(service)
+    with calendar_tab:
+        _render_icloud(service)
+    with mail_tab:
+        _render_gmail(service)
+    with youtube_tab:
+        _render_youtube(service)
+    with catalog_tab:
+        _render_catalog(service)
+
+
+def _render_youtube(service: PersonalAIService) -> None:
     st.markdown("#### YouTube 公共学习资料 · 本机 MCP stdio")
     youtube = service.youtube_status()
     st.caption("仅搜索公开视频和读取标题、频道、时长、链接；不读取个人账号数据或字幕。"
@@ -197,7 +220,7 @@ def render(service: PersonalAIService) -> None:
             except Exception as exc:
                 show_error(exc)
     else:
-        st.caption("服务器和两项操作须在下方目录中逐项启用。")
+        st.caption("服务器和两项操作须在「外部工具目录」中逐项启用。")
         with st.form("youtube_search"):
             youtube_query = st.text_input("YouTube 学习资料搜索词")
             youtube_search = st.form_submit_button("搜索 YouTube 公开视频")
@@ -210,6 +233,9 @@ def render(service: PersonalAIService) -> None:
             st.link_button(f"{video['title']} · {video['channel']} · "
                            f"{video['duration_seconds'] // 60} 分钟 · {video['source']}",
                            video["url"])
+def _render_catalog(service: PersonalAIService) -> None:
+    st.caption("目录仅保存本机白名单；未配置适配器时不会发生外部调用。")
+    youtube = service.youtube_status()
     with st.form("external_register"):
         name = st.text_input("服务器名称")
         kind = st.selectbox("服务器类型", ["calendar", "mail", "mcp"], format_func=zh)
@@ -288,10 +314,11 @@ def render(service: PersonalAIService) -> None:
                         except Exception as exc:
                             show_error(exc)
 
+def _render_proposals(service: PersonalAIService) -> None:
     st.markdown("#### 外部写入逐项确认")
     proposals = service.list_external_write_proposals()
     if not proposals:
-        st.caption("暂无外部写入草案。")
+        st.info("没有待确认的外部写入。创建日历事件或邮件草案后，会先在这里展示完整内容。")
     for proposal in proposals:
         with st.expander(f"{zh(proposal['operation'])} → {proposal['target']} · "
                          f"{zh(proposal['status'])} · {proposal['id'][:8]}"):
@@ -324,7 +351,7 @@ def render(service: PersonalAIService) -> None:
             if proposal["result"] is not None:
                 st.json(proposal["result"])
             if proposal["status"] == "pending":
-                if st.button("确认这一项外部写入", key=f"external_approve_{proposal['id']}"):
+                if st.button("确认这一项外部写入", type="primary", key=f"external_approve_{proposal['id']}"):
                     try:
                         service.approve_external_write(proposal["id"], proposal["revision"])
                         st.rerun()
